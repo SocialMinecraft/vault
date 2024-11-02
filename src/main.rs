@@ -9,7 +9,6 @@ use std::future::Future;
 use std::time::Duration;
 use tokio::task;
 
-use protobuf::{Message, MessageField};
 use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
@@ -57,13 +56,13 @@ where
     Ok(())
 }
 
-fn get_app_name() -> Option<String> {
+/*fn get_app_name() -> Option<String> {
     env::current_exe()
         .ok()
         .and_then(|pb| pb.file_name()
             .and_then(|n| n.to_str())
             .map(|s| s.to_owned()))
-}
+}*/
 
 async fn connect_to_database() -> Result<Pool<Postgres>> {
     // Get Nats Env Variable
@@ -89,10 +88,10 @@ async fn connect_to_database() -> Result<Pool<Postgres>> {
 async fn main() -> Result<()> {
 
     // get the app name, used for group and such
-    let app_name = match get_app_name() {
+    /*let app_name = match get_app_name() {
         Some(name) => name,
         None => { return Err(anyhow::anyhow!("Could not  determine application name.")); },
-    };
+    };*/
 
     // connect to db
     let db = connect_to_database().await?;
@@ -102,14 +101,6 @@ async fn main() -> Result<()> {
     let nc = connect_to_nats().await?;
 
     let mut set: JoinSet<()> = JoinSet::new();
-
-    /*let _nc = nc.clone();
-    set.spawn(async move {
-        handle_requests(_nc, "hello", |_nc, msg| {
-            let decoded_msg = Hello::parse_from_bytes(&msg.payload).unwrap();
-            println!("Hello from: {}", decoded_msg.from);
-        }).await.expect("Could not listen for messages on hello");
-    });*/
 
     let _nc = nc.clone();
     let _store = store.clone();
@@ -122,13 +113,18 @@ async fn main() -> Result<()> {
     let _nc = nc.clone();
     let _store = store.clone();
     set.spawn(async move {
+        handle_requests(_nc, "vault.remove", move|_nc, msg| {
+            handlers::remove::remove(_store.clone(), _nc, msg)
+        }).await.expect("vault.remove");
+    });
+
+    let _nc = nc.clone();
+    let _store = store.clone();
+    set.spawn(async move {
         handle_requests(_nc, "vault.get",  move|_nc, msg| {
             handlers::get::get(_store.clone(), _nc, msg)
         }).await.expect("vault.get");
     });
-
-    // send hello
-    //send_hello(nc.clone(), &app_name.to_string()).await?;
 
     set.join_all().await;
     Ok(())

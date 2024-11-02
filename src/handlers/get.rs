@@ -4,7 +4,6 @@ use crate::proto::vault::{Vault, VaultSlot};
 use crate::proto::vault_get::{GetVault, GetVaultResponse};
 use crate::store::Store;
 use protobuf::{Message};
-use crate::proto::vault_store::StoreVaultItemResponse;
 
 pub async fn get(db: Store, nc: Client, msg: async_nats::Message) -> anyhow::Result<()> {
     let request = GetVault::parse_from_bytes(&msg.payload).unwrap();

@@ -1,10 +1,9 @@
-use sqlx::{Encode, PgPool, Pool, Postgres};
 use crate::proto::vault_item::{VaultItem, VaultItemEnchantment};
 use anyhow::Result;
 use protobuf::SpecialFields;
 use sqlx::types::Uuid;
-use crate::proto::vault::Vault;
 use chrono::{Datelike, NaiveDateTime, Utc};
+use sqlx::PgPool;
 
 #[derive(Clone)]
 pub struct Store {
@@ -55,7 +54,7 @@ impl Store {
         }
 
         // create new record
-        sqlx::query!(
+        let _ = sqlx::query!(
             r#"
                INSERT INTO players (player) VALUES ($1)
             ;"#,
@@ -128,7 +127,7 @@ impl Store {
         let enchants = item.enchants.iter().map(|e| {
             (e.name.clone() + "," + e.level.to_string().as_str()).to_string()
         }).collect::<Vec<String>>();
-        sqlx::query_as!(
+        let _ = sqlx::query_as!(
             T,
             r#"
             INSERT INTO items (
@@ -152,5 +151,20 @@ impl Store {
             .await;
 
         Ok(true)
+    }
+
+    pub async fn remove_item(&self, player: &String, slot: i32) -> Result<()> {
+        let _ = sqlx::query!(
+            r#"
+            DELETE FROM items
+            WHERE player = $1 AND slot = $2
+            ;"#,
+            Uuid::parse_str(&player)?,
+            slot,
+        )
+            .execute(&self.db)
+            .await;
+
+        Ok(()) // should really return if an item was removed... so a bool
     }
 }

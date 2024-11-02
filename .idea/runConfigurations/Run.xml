@@ -7,6 +7,7 @@
       <env name="CARGO_PROFILE_DEV_BUILD_OVERRIDE_DEBUG" value="true" />
       <env name="DATABASE_URL" value="postgres://postgres:password@localhost/postgres" />
       <env name="NATS_URL" value="localhost:4222" />
+      <env name="COOLDOWN_SECS" value="300" />
     </envs>
     <option name="emulateTerminal" value="true" />
     <option name="channel" value="DEFAULT" />

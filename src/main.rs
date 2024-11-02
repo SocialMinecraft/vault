@@ -93,6 +93,13 @@ async fn main() -> Result<()> {
         None => { return Err(anyhow::anyhow!("Could not  determine application name.")); },
     };*/
 
+    let cooldown_sec = match env::var("COOLDOWN_SECS") {
+        Ok(value) => value.parse::<i64>().unwrap(),
+        Err(e) => {
+            return Err(anyhow::anyhow!("Couldn't read COOLDOWN_SECS environment variable: {}", e));
+        },
+    };
+
     // connect to db
     let db = connect_to_database().await?;
     let store = Store::new(db.clone());
@@ -114,7 +121,7 @@ async fn main() -> Result<()> {
     let _store = store.clone();
     set.spawn(async move {
         handle_requests(_nc, "vault.remove", move|_nc, msg| {
-            handlers::remove::remove(_store.clone(), _nc, msg)
+            handlers::remove::remove(_store.clone(), _nc, msg, cooldown_sec)
         }).await.expect("vault.remove");
     });
 

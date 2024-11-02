@@ -1,9 +1,10 @@
 use crate::proto::vault_item::{VaultItem, VaultItemEnchantment};
 use anyhow::Result;
-use protobuf::SpecialFields;
+use protobuf::{MessageField, SpecialFields};
 use sqlx::types::Uuid;
 use chrono::{Datelike, NaiveDateTime, Utc};
 use sqlx::PgPool;
+use crate::proto::vault::VaultSlot;
 
 #[derive(Clone)]
 pub struct Store {
@@ -66,7 +67,7 @@ impl Store {
         Ok(1)
     }
 
-    pub async fn get_item(&self, player: &String, slot: i32) -> Result<Option<VaultItem>> {
+    pub async fn get_slot(&self, player: &String, slot: i32) -> Result<VaultSlot> {
         struct T {
             pub type_: String,
             pub amount: i32,
@@ -75,14 +76,16 @@ impl Store {
             pub custom_model_data: Option<i32>,
             pub lore: Vec<String>,
             pub enchants: Vec<String>,
-            pub flags: Vec<String>
+            pub flags: Vec<String>,
+            pub cooldown: Option<NaiveDateTime>,
         }
         let re = sqlx::query_as!(
             T,
             r#"
             SELECT
                 type as type_, amount, durability,
-                display_name, custom_model_data, lore, enchants, flags
+                display_name, custom_model_data, lore, enchants, flags,
+                cooldown
             FROM
                 items
             WHERE
@@ -96,9 +99,25 @@ impl Store {
             .await?;
 
         if re.is_none() {
-            return Ok(None);
+            return Ok(VaultSlot{
+                slot,
+                is_locked: false,
+                cooldown_seconds: 0,
+                item: MessageField(None),
+                special_fields: SpecialFields::default(),
+            })
         }
         let re: T = re.unwrap();
+
+        if re.cooldown.is_some()  && re.cooldown.unwrap() > Utc::now().naive_utc() {
+            return Ok(VaultSlot{
+                slot,
+                is_locked: false,
+                cooldown_seconds: (re.cooldown.unwrap().signed_duration_since(Utc::now().naive_utc()).num_seconds()) as i32,
+                item: MessageField(None),
+                special_fields: SpecialFields::default(),
+            })
+        }
 
         let mut enchants = Vec::new();
         for raw in re.enchants {
@@ -109,7 +128,7 @@ impl Store {
             enchants.push(enchant);
         }
 
-        Ok(Some(VaultItem {
+        let item = VaultItem {
             type_: re.type_,
             amount: re.amount,
             durability: re.durability,
@@ -120,7 +139,15 @@ impl Store {
             enchants,
             flags: re.flags,
             special_fields: SpecialFields::new(),
-        }))
+        };
+
+        Ok(VaultSlot{
+            slot,
+            is_locked: false,
+            cooldown_seconds: 0,
+            item: MessageField::some(item),
+            special_fields: SpecialFields::default(),
+        })
     }
 
     pub async fn store_item(&self, player: &String, slot: i32, item: &VaultItem) -> Result<bool> {
@@ -133,8 +160,9 @@ impl Store {
             INSERT INTO items (
                 player, slot,
                 type, amount, durability,
-                display_name, custom_model_data, lore, enchants, flags
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                display_name, custom_model_data, lore, enchants, flags,
+                cooldown
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, null)
             ;"#,
             Uuid::parse_str(&player)?,
             slot,
@@ -153,17 +181,28 @@ impl Store {
         Ok(true)
     }
 
-    pub async fn remove_item(&self, player: &String, slot: i32) -> Result<()> {
+    pub async fn remove_item(&self, player: &String, slot: i32, cooldown_expires: NaiveDateTime) -> Result<()> {
         let _ = sqlx::query!(
             r#"
-            DELETE FROM items
+            UPDATE items
+            SET
+              type = 'AIR',
+              amount = 1,
+              durability = 1,
+              display_name = null,
+              custom_model_data = null,
+              lore = '{}',
+              enchants = '{}',
+              flags = '{}',
+              cooldown = $3
             WHERE player = $1 AND slot = $2
             ;"#,
             Uuid::parse_str(&player)?,
             slot,
+            cooldown_expires,
         )
             .execute(&self.db)
-            .await;
+            .await?;
 
         Ok(()) // should really return if an item was removed... so a bool
     }

@@ -1,9 +1,11 @@
 use protobuf::{Message};
 use async_nats::Client;
 use anyhow::{ Result};
+use tracing::error;
 use crate::proto::vault_store::{StoreVaultItem, StoreVaultItemResponse};
 use crate::store::Store;
 
+#[tracing::instrument]
 pub async fn store(db: Store, nc: Client, msg: async_nats::Message) -> Result<()> {
      let request = StoreVaultItem::parse_from_bytes(&msg.payload)?;
 
@@ -11,7 +13,7 @@ pub async fn store(db: Store, nc: Client, msg: async_nats::Message) -> Result<()
     let size = match db.vault_size(&request.uuid).await {
         Ok(n) => n,
         Err(e) => {
-            println!("vault size: {}", e);
+            error!("Error: {}", e.to_string());
             send_error_reply(&nc, &msg,"Could not fetch inventory size." ).await?;
             return Err(e);
         }
@@ -25,7 +27,7 @@ pub async fn store(db: Store, nc: Client, msg: async_nats::Message) -> Result<()
     let existing = match db.get_slot(&request.uuid, request.slot).await {
         Ok(n) => n,
         Err(e) => {
-            println!("existing: {}", e);
+            error!("Error: {}", e.to_string());
             send_error_reply(&nc, &msg,"Could not check slot." ).await?;
             return Err(e);
         },
@@ -44,7 +46,7 @@ pub async fn store(db: Store, nc: Client, msg: async_nats::Message) -> Result<()
     match db.store_item(&request.uuid, request.slot, &request.item.unwrap()).await {
         Ok(_) => {}
         Err(e) => {
-            println!("store_item: {}", e);
+            error!("Error: {}", e.to_string());
             send_error_reply(&nc, &msg,"StoreItem failed." ).await?;
             return Err(e);
         }

@@ -6,7 +6,7 @@ use chrono::{Datelike, NaiveDateTime, Utc};
 use sqlx::PgPool;
 use crate::proto::vault::VaultSlot;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Store {
     db: PgPool
 }

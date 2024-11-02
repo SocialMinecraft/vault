@@ -2,16 +2,18 @@ use protobuf::{Message};
 use async_nats::Client;
 use anyhow::{ Result};
 use chrono::{Duration, Utc};
+use tracing::error;
 use crate::proto::vault_remove::{RemoveVaultItem, RemoveVaultItemResponse};
 use crate::store::Store;
 
+#[tracing::instrument]
 pub async fn remove(db: Store, nc: Client, msg: async_nats::Message, cooldown_sec: i64) -> Result<()> {
     let request = RemoveVaultItem::parse_from_bytes(&msg.payload)?;
 
     let existing = match db.get_slot(&request.uuid, request.slot).await {
         Ok(n) => n.item.is_some(),
         Err(e) => {
-            println!("existing: {}", e);
+            error!("Error: {}", e.to_string());
             send_error_reply(&nc, &msg,"Could not check slot." ).await?;
             return Err(e);
         },
@@ -26,7 +28,7 @@ pub async fn remove(db: Store, nc: Client, msg: async_nats::Message, cooldown_se
     match db.remove_item(&request.uuid, request.slot, cooldown_expire).await {
         Ok(_) => {}
         Err(e) => {
-            println!("remove_item: {}", e);
+            error!("Error: {}", e.to_string());
             send_error_reply(&nc, &msg,"Remove Item failed." ).await?;
             return Err(e);
         }

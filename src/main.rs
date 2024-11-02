@@ -12,6 +12,9 @@ use tokio::task;
 use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
+use tracing::{error, Level};
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::fmt::format::FmtSpan;
 use crate::store::Store;
 
 async fn connect_to_nats() -> Result<async_nats::Client> {
@@ -48,7 +51,7 @@ where
         task::spawn(tokio::time::timeout(Duration::from_millis(300), async move {
             let msg = msg;
             if let Err(e) = f(nc, msg.clone()).await {
-                println!("Error: {}", e.to_string());
+                error!("Error: {}", e.to_string());
             };
         }));
     }
@@ -56,13 +59,13 @@ where
     Ok(())
 }
 
-/*fn get_app_name() -> Option<String> {
+fn get_app_name() -> Option<String> {
     env::current_exe()
         .ok()
         .and_then(|pb| pb.file_name()
             .and_then(|n| n.to_str())
             .map(|s| s.to_owned()))
-}*/
+}
 
 async fn connect_to_database() -> Result<Pool<Postgres>> {
     // Get Nats Env Variable
@@ -84,14 +87,36 @@ async fn connect_to_database() -> Result<Pool<Postgres>> {
     Ok(pool)
 }
 
+fn setup_logging(app_name: &str) {
+    // Initialize the tracing subscriber with a custom configuration
+    tracing_subscriber::fmt()
+        // Include thread IDs
+        .with_thread_ids(true)
+        // Include span events (enter/exit of spans)
+        .with_span_events(FmtSpan::FULL)
+        // Use a custom environment filter
+        .with_env_filter(
+            EnvFilter::from_default_env()
+                .add_directive(Level::INFO.into())
+                // Add specific module levels
+                .add_directive((app_name.to_string()+"=debug").parse().unwrap())
+        )
+        // Pretty printing for development
+        .pretty()
+        // Initialize the subscriber
+        .init();
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
 
     // get the app name, used for group and such
-    /*let app_name = match get_app_name() {
+    let app_name = match get_app_name() {
         Some(name) => name,
         None => { return Err(anyhow::anyhow!("Could not  determine application name.")); },
-    };*/
+    };
+
+    setup_logging(app_name.as_str());
 
     let cooldown_sec = match env::var("COOLDOWN_SECS") {
         Ok(value) => value.parse::<i64>().unwrap(),

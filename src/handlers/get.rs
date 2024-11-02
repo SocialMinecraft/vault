@@ -4,7 +4,9 @@ use crate::proto::vault::{Vault};
 use crate::proto::vault_get::{GetVault, GetVaultResponse};
 use crate::store::Store;
 use protobuf::{Message};
+use tracing::info;
 
+#[tracing::instrument]
 pub async fn get(db: Store, nc: Client, msg: async_nats::Message) -> anyhow::Result<()> {
     let request = GetVault::parse_from_bytes(&msg.payload).unwrap();
 

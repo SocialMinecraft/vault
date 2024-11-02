@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO items (\n                player, slot,\n                type, amount, durability,\n                display_name, custom_model_data, lore, enchants, flags,\n                cooldown\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, null)\n            ;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4",
+        "Varchar",
+        "Int4",
+        "Int4",
+        "Text",
+        "Int4",
+        "TextArray",
+        "TextArray",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2b9ed01ebb57ca1c0c2f75f12a70d3d1f8c9f8cd3678708cf62d05073d6e269e"
+}

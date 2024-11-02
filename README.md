@@ -17,3 +17,9 @@ cargo release patch/minor/major --execute
 ```sh
 sqlx migrate add
 ```
+
+## Update sql scripts
+
+```shell
+cargo sqlx prepare
+```

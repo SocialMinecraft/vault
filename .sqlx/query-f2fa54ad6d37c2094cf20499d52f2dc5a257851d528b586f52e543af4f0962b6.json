@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n               SELECT\n                 created\n               FROM\n                 players\n               WHERE\n                 player = $1\n            ;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created",
+        "type_info": "Timestamp"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f2fa54ad6d37c2094cf20499d52f2dc5a257851d528b586f52e543af4f0962b6"
+}

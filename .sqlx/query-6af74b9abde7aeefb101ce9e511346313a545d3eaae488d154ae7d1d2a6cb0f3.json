@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM items\n            WHERE player = $1 AND slot = $2\n            ;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6af74b9abde7aeefb101ce9e511346313a545d3eaae488d154ae7d1d2a6cb0f3"
+}

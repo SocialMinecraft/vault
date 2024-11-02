@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n               INSERT INTO players (player) VALUES ($1)\n            ;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d94e553bd8dd05a7c3def7c40be5b479c28e18636587bc197e2e45873ed70ec9"
+}

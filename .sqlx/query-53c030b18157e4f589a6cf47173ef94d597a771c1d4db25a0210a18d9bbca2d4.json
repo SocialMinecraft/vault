@@ -1,0 +1,71 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                type as type_, amount, durability,\n                display_name, custom_model_data, lore, enchants, flags,\n                cooldown\n            FROM\n                items\n            WHERE\n                player = $1 AND\n                slot = $2\n            ;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "type_",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "amount",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "durability",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "display_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "custom_model_data",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "lore",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 6,
+        "name": "enchants",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 7,
+        "name": "flags",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 8,
+        "name": "cooldown",
+        "type_info": "Timestamp"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "53c030b18157e4f589a6cf47173ef94d597a771c1d4db25a0210a18d9bbca2d4"
+}

@@ -1,11 +1,10 @@
-mod generated;
+mod proto;
 
 use futures::StreamExt;
 use anyhow::Result;
 use std::env;
 use tokio::task;
 
-use generated::hello::Hello;
 use protobuf::Message;
 use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
@@ -28,7 +27,7 @@ async fn connect_to_nats() -> Result<async_nats::Client> {
     Ok(client)
 }
 
-async fn send_hello(nc: async_nats::Client, from: &str) -> Result<()> {
+/*async fn send_hello(nc: async_nats::Client, from: &str) -> Result<()> {
 
     // create test message
     let mut msg = Hello::new();
@@ -42,7 +41,7 @@ async fn send_hello(nc: async_nats::Client, from: &str) -> Result<()> {
     publisher_client.publish("hello", encoded.into()).await?;
 
     Ok(())
-}
+}*/
 
 async fn handle_requests<F>(nc: async_nats::Client, subject: &str, f: F) -> Result<()>
 where
@@ -109,18 +108,18 @@ async fn main() -> Result<()> {
     // connect to nats
     let nc = connect_to_nats().await?;
 
-    let mut set = JoinSet::new();
+    let mut set: JoinSet<()> = JoinSet::new();
 
-    let _nc = nc.clone();
+    /*let _nc = nc.clone();
     set.spawn(async move {
         handle_requests(_nc, "hello", |_nc, msg| {
             let decoded_msg = Hello::parse_from_bytes(&msg.payload).unwrap();
             println!("Hello from: {}", decoded_msg.from);
         }).await.expect("Could not listen for messages on hello");
-    });
+    });*/
 
     // send hello
-    send_hello(nc.clone(), &app_name.to_string()).await?;
+    //send_hello(nc.clone(), &app_name.to_string()).await?;
 
     set.join_all().await;
     Ok(())

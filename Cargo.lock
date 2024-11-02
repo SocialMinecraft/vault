@@ -1695,21 +1695,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "template"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-nats",
- "bytes",
- "futures",
- "protobuf",
- "protobuf-codegen",
- "sqlx",
- "tokio",
- "walkdir",
-]
-
-[[package]]
 name = "thiserror"
 version = "1.0.65"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1936,6 +1921,21 @@ dependencies = [
  "form_urlencoded",
  "idna",
  "percent-encoding",
+]
+
+[[package]]
+name = "vault"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-nats",
+ "bytes",
+ "futures",
+ "protobuf",
+ "protobuf-codegen",
+ "sqlx",
+ "tokio",
+ "walkdir",
 ]
 
 [[package]]

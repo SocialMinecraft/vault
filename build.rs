@@ -26,7 +26,7 @@ fn main() {
 
     // Generate the Rust code
     protobuf_codegen::Codegen::new()
-        .out_dir("src/generated")
+        .out_dir("src/proto")
         .inputs(&proto_paths)
         .include("proto")
         .run()

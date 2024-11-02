@@ -128,6 +128,17 @@ impl Store {
             enchants.push(enchant);
         }
 
+        if re.type_ == "AIR" {
+            self.delete_item(player, slot).await?;
+            return Ok(VaultSlot{
+                slot,
+                is_locked: false,
+                cooldown_seconds: 0,
+                item: MessageField(None),
+                special_fields: SpecialFields::default(),
+            });
+        }
+
         let item = VaultItem {
             type_: re.type_,
             amount: re.amount,
@@ -200,6 +211,21 @@ impl Store {
             Uuid::parse_str(&player)?,
             slot,
             cooldown_expires,
+        )
+            .execute(&self.db)
+            .await?;
+
+        Ok(()) // should really return if an item was removed... so a bool
+    }
+
+    async fn delete_item(&self, player: &String, slot: i32) -> Result<()> {
+        let _ = sqlx::query!(
+            r#"
+            DELETE FROM items
+            WHERE player = $1 AND slot = $2
+            ;"#,
+            Uuid::parse_str(&player)?,
+            slot,
         )
             .execute(&self.db)
             .await?;

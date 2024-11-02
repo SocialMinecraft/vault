@@ -6,7 +6,7 @@
         <option name="envVars">
           <list>
             <DockerEnvVarImpl>
-              <option name="name" value="DB_URL" />
+              <option name="name" value="DATABASE_URL" />
               <option name="value" value="postgres://postgres:password@host.docker.internal/template" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>

@@ -1,14 +1,19 @@
 mod proto;
+mod handlers;
+mod store;
 
 use futures::StreamExt;
 use anyhow::Result;
 use std::env;
+use std::future::Future;
+use std::time::Duration;
 use tokio::task;
 
-use protobuf::Message;
+use protobuf::{Message, MessageField};
 use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
+use crate::store::Store;
 
 async fn connect_to_nats() -> Result<async_nats::Client> {
     // Get Nats Env Variable
@@ -27,25 +32,10 @@ async fn connect_to_nats() -> Result<async_nats::Client> {
     Ok(client)
 }
 
-/*async fn send_hello(nc: async_nats::Client, from: &str) -> Result<()> {
-
-    // create test message
-    let mut msg = Hello::new();
-    msg.from = from.to_string();
-
-    // Serialize the user to bytes
-    let encoded: Vec<u8> = msg.write_to_bytes().unwrap();
-
-    // send message
-    let publisher_client = nc.clone();
-    publisher_client.publish("hello", encoded.into()).await?;
-
-    Ok(())
-}*/
-
-async fn handle_requests<F>(nc: async_nats::Client, subject: &str, f: F) -> Result<()>
+async fn handle_requests<F, Fut>(nc: async_nats::Client, subject: &str, f: F) -> Result<()>
 where
-    F: Fn(async_nats::Client, async_nats::Message) + Send + Copy + Sync + 'static
+    F: Fn(async_nats::Client, async_nats::Message) -> Fut + Send + Clone + Sync + 'static,
+    Fut:  Future<Output = Result<()>> + Send + 'static,
 {
     let subject = subject.to_string();
 
@@ -56,10 +46,12 @@ where
         let nc = nc.clone();
         let f = f.clone();
 
-        task::spawn(async move {
+        task::spawn(tokio::time::timeout(Duration::from_millis(300), async move {
             let msg = msg;
-            f(nc, msg.clone());
-        });
+            if let Err(e) = f(nc, msg.clone()).await {
+                println!("Error: {}", e.to_string());
+            };
+        }));
     }
 
     Ok(())
@@ -75,10 +67,10 @@ fn get_app_name() -> Option<String> {
 
 async fn connect_to_database() -> Result<Pool<Postgres>> {
     // Get Nats Env Variable
-    let db_url = match env::var("DB_URL") {
+    let db_url = match env::var("DATABASE_URL") {
         Ok(value) => value,
         Err(e) => {
-            return Err(anyhow::anyhow!("Couldn't read DB_URL environment variable: {}", e));
+            return Err(anyhow::anyhow!("Couldn't read DATABASE_URL environment variable: {}", e));
         },
     };
 
@@ -104,6 +96,7 @@ async fn main() -> Result<()> {
 
     // connect to db
     let db = connect_to_database().await?;
+    let store = Store::new(db.clone());
 
     // connect to nats
     let nc = connect_to_nats().await?;
@@ -117,6 +110,22 @@ async fn main() -> Result<()> {
             println!("Hello from: {}", decoded_msg.from);
         }).await.expect("Could not listen for messages on hello");
     });*/
+
+    let _nc = nc.clone();
+    let _store = store.clone();
+    set.spawn(async move {
+        handle_requests(_nc, "vault.store", move|_nc, msg| {
+            handlers::store::store(_store.clone(), _nc, msg)
+        }).await.expect("vault.store");
+    });
+
+    let _nc = nc.clone();
+    let _store = store.clone();
+    set.spawn(async move {
+        handle_requests(_nc, "vault.get",  move|_nc, msg| {
+            handlers::get::get(_store.clone(), _nc, msg)
+        }).await.expect("vault.get");
+    });
 
     // send hello
     //send_hello(nc.clone(), &app_name.to_string()).await?;

@@ -5,7 +5,7 @@
     <option name="workingDirectory" value="file://$PROJECT_DIR$" />
     <envs>
       <env name="CARGO_PROFILE_DEV_BUILD_OVERRIDE_DEBUG" value="true" />
-      <env name="DB_URL" value="postgres://postgres:password@localhost/postgres" />
+      <env name="DATABASE_URL" value="postgres://postgres:password@localhost/postgres" />
       <env name="NATS_URL" value="localhost:4222" />
     </envs>
     <option name="emulateTerminal" value="true" />

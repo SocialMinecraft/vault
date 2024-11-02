@@ -107,6 +107,7 @@ impl Store {
             let parts: Vec<&str> = raw.split(',').collect();
             enchant.name = parts[0].to_string();
             enchant.level = parts[1].to_string().parse::<i32>()?;
+            enchants.push(enchant);
         }
 
         Ok(Some(VaultItem {
